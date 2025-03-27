@@ -78,4 +78,72 @@ router.get("/", async (req, res) => {
 });
 
 
+
+const axios = require("axios");
+
+
+const CLIENT_ID = "86w2m1s60mrpi8";
+const CLIENT_SECRET = "WPL_AP1.MnZbwsK7J8cJ9a3S.DewU6A==";
+const REDIRECT_URI = "http://localhost:3000/auth/linkedin/callback"; // Same as in LinkedIn App
+
+// Route to handle LinkedIn OAuth callback
+router.get("/auth/linkedin/callback", async (req, res) => {
+    const { code } = req.query; // Get 'code' from LinkedIn callback
+
+    if (!code) {
+        return res.status(400).json({ error: "Authorization code is missing!" });
+    }
+
+    try {
+        // Exchange code for an access token
+        const tokenResponse = await axios.post("https://www.linkedin.com/oauth/v2/accessToken", null, {
+            params: {
+                grant_type: "authorization_code",
+                code: code,
+                redirect_uri: REDIRECT_URI,
+                client_id: CLIENT_ID,
+                client_secret: CLIENT_SECRET
+            },
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+        });
+
+        const accessToken = tokenResponse.data.access_token;
+        res.json({ access_token: accessToken }); // Send access token to frontend
+
+    } catch (error) {
+        console.error("Error getting access token:", error.response ? error.response.data : error.message);
+        res.status(500).json({ error: "Failed to get access token" });
+    }
+});
+
+const LINKEDIN_API_URL = "https://api.linkedin.com/v2/me";
+
+// Route to fetch user data from LinkedIn
+router.get("/auth/linkedin/user", async (req, res) => {
+    const accessToken = req.headers.authorization; // Get token from headers
+
+    if (!accessToken) {
+        return res.status(401).json({ error: "Access token required!" });
+    }
+
+    try {
+        // Fetch user data from LinkedIn
+        const userProfile = await axios.get(LINKEDIN_API_URL, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
+
+        res.json(userProfile.data); // Send user data to frontend
+
+    } catch (error) {
+        console.error("Error fetching user data:", error.response ? error.response.data : error.message);
+        res.status(500).json({ error: "Failed to fetch user data" });
+    }
+});
+
+
+
 module.exports = router;

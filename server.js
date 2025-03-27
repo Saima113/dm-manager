@@ -4,6 +4,8 @@ const {Pool} = require ("pg");
 const app = express();
 const path = require('path');
 const { getAsync, setAsync } = require('./redis'); 
+const WebSocket = require('ws');
+const wss = new WebSocket.Server({ port: 8080 });
 
 require("dotenv").config();
 
@@ -58,7 +60,7 @@ async function deleteOldLowPriorityMessages() {
 
 setInterval(deleteOldLowPriorityMessages, 24 * 60 * 60 * 1000); // Runs every 24 hours
 
-d
+
 
 // Get all messages with Redis caching
 app.get('/api/messages', async (req, res) => {
@@ -93,6 +95,27 @@ app.get('/api/messages', async (req, res) => {
     console.error('Error fetching messages:', error);
     res.status(500).json({ error: 'Failed to fetch messages' });
   }
+
+
+
+  wss.on('connection', ws => {
+    console.log("Client connected");
+
+    // Send a welcome message
+    ws.send(JSON.stringify({ user: "System", text: "Connected to WebSocket server!" }));
+
+    // Simulate new messages coming in every few seconds
+    setInterval(() => {
+        const message = {
+            user: "Recruiter A",
+            text: "We have an exciting opportunity for you!",
+            id: Math.random()
+        };
+        ws.send(JSON.stringify(message));
+    }, 5000);
+
+    ws.on('close', () => console.log("Client disconnected"));
+});
 });
 
 
