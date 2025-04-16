@@ -1,4 +1,4 @@
-
+require("dotenv").config();
 const express = require("express");
 const {Pool} = require ("pg");
 const app = express();
@@ -6,8 +6,12 @@ const path = require('path');
 const { getAsync, setAsync } = require('./redis'); 
 const WebSocket = require('ws');
 const wss = new WebSocket.Server({ port: 8080 });
+const openai = require('./openai');
+const routes = require("./routes");
 
-require("dotenv").config();
+
+console.log("loaded key:",process.env.OPEN_API_KEY);
+
 
 app.use(express.json()); // Middleware to parse JSON
 
@@ -18,19 +22,19 @@ const pool= new Pool({
 );
 
 pool.connect()
-.then(()=> console.log("postgre connected"))
+.then(()=> console.log("postgres connected"))
 .catch(err => console.error("DB Connection Error", err));
 
 
-const PORT = process.env.PORT || 5000;
+// const PORT = process.env.PORT || 5000;
 app.use(express.static(path.join(__dirname, "linkedin-react/build")));
 
 // Add this before your catch-all route ("*")
 app.get('/api/messages', (req, res) => {
     // Sample data - in a real app, this would come from a database
     const messages = [
-      { id: 1, sender: 'John Doe', content: 'Hey, let\'s connect!', priority: 'medium' },
-      { id: 2, sender: 'Jane Smith', content: 'Looking forward to our meeting.', priority: 'high' }
+      { id: 1, sender: 'saima', content: 'Hey, let\'s connect!', priority: 'medium' },
+      { id: 2, sender: 'gunjan', content: 'Looking forward to our meeting.', priority: 'high' }
     ];
     res.json(messages);
   });
@@ -43,7 +47,7 @@ app.get("/", (req, res) => {
     res.send("Server is running! Define your frontend or API routes.");
   });
   
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 const messageRoutes = require("./routes");
 
@@ -117,6 +121,26 @@ app.get('/api/messages', async (req, res) => {
     ws.on('close', () => console.log("Client disconnected"));
 });
 });
+
+//postman
+
+const bodyParser = require('body-parser');
+const router = require('./routes'); // Import your router
+
+
+const PORT = process.env.PORT || 3000;
+
+// Middleware for parsing JSON bodies
+app.use(express.json());
+
+// Mount your router at the /api prefix
+app.use('/api', router);
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
 
 
 

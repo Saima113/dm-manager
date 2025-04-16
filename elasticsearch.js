@@ -1,12 +1,12 @@
-// elasticsearch.js
+
 const { Client } = require('@elastic/elasticsearch');
 
-// Create Elasticsearch client
+// Creating Elasticsearch client
 const elasticClient = new Client({
   node: 'http://localhost:9200'  // Default Elasticsearch address
 });
 
-// Initialize Elasticsearch (create index)
+// Initializing Elasticsearch (creating index)
 async function initializeElasticsearch() {
   try {
     // Check if index exists
