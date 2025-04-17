@@ -12,8 +12,20 @@ const DEFAULT_PORT = parseInt(process.env.PORT) || 3000;
 
 // ✅ Express Middleware
 app.use(express.json());
+
+// Signup route
+app.post('/api/signup', (req, res) => {
+  const { name, email, password } = req.body;
+  // You can validate and store the user here
+  res.status(201).json({ message: 'Signup successful!' });
+});
+
+
 app.use(express.static(path.join(__dirname, "linkedin-react/build")));
 app.use("/api/messages", messageRoutes);
+
+
+
 
 // ✅ Postgres setup
 const pool = new Pool({
@@ -112,4 +124,26 @@ function tryListen(port) {
 }
 
 console.log(`WebSocket + Express server initializing on port ${DEFAULT_PORT}`);
+
+//login postman
+
+app.post('/api/login', (req, res) => {
+  const { email, password } = req.body;
+
+  // 🔍 For now, just check with some hardcoded dummy values
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required" });
+  }
+
+  // 📦 Dummy login check (replace later with real DB lookup)
+  if (email === "test@example.com" && password === "password123") {
+    return res.status(200).json({ message: "Login successful!" });
+  } else {
+    return res.status(401).json({ error: "Invalid email or password" });
+  }
+});
+
 tryListen(DEFAULT_PORT);
+
+
+

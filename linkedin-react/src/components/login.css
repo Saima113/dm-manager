@@ -1,0 +1,14 @@
+/* login.css */
+
+input {
+    display: block;
+    margin: 10px 0;
+    padding: 8px;
+    width: 250px;
+  }
+  
+  p {
+    color: rgb(0, 102, 255);
+    font-size: 0.8rem;
+  }
+  
