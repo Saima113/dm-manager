@@ -1,12 +1,15 @@
 require("dotenv").config();
 const express = require("express");
+const cors = require("cors");
 const { Pool } = require("pg");
 const path = require("path");
 const { getAsync, setAsync } = require('./redis');
 const WebSocket = require('ws');
 const http = require('http');
+const bcrypt = require("bcrypt");
 
 const app = express();
+app.use(cors()); 
 const messageRoutes = require("./routes");
 const DEFAULT_PORT = parseInt(process.env.PORT) || 3000;
 
@@ -14,10 +17,31 @@ const DEFAULT_PORT = parseInt(process.env.PORT) || 3000;
 app.use(express.json());
 
 // Signup route
-app.post('/api/signup', (req, res) => {
+app.post('/api/signup', async (req, res) => {
   const { name, email, password } = req.body;
-  // You can validate and store the user here
-  res.status(201).json({ message: 'Signup successful!' });
+
+  if (!email || !password || !name) {
+    return res.status(400).json({ error: "All fields are required" });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await pool.query(
+      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3)',
+      [name, email, hashedPassword]
+    );
+
+    res.status(201).json({ message: 'Signup successful!' });
+  } catch (err) {
+    console.error(err);
+    if (err.code === '23505') {
+      res.status(400).json({ error: 'Email already exists' });
+    } else {
+      res.status(500).json({ error: 'Server error during signup' });
+    }
+  }
+
+  
 });
 
 
@@ -127,7 +151,7 @@ console.log(`WebSocket + Express server initializing on port ${DEFAULT_PORT}`);
 
 //login postman
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
 
   // 🔍 For now, just check with some hardcoded dummy values
@@ -135,12 +159,29 @@ app.post('/api/login', (req, res) => {
     return res.status(400).json({ error: "Email and password are required" });
   }
 
-  // 📦 Dummy login check (replace later with real DB lookup)
-  if (email === "test@example.com" && password === "password123") {
-    return res.status(200).json({ message: "Login successful!" });
-  } else {
-    return res.status(401).json({ error: "Invalid email or password" });
+  try {
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const user = result.rows[0];
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    res.status(200).json({
+      message: 'Login successful!',
+      user: { name: user.name, email: user.email }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error during login' });
   }
+
+
 });
 
 tryListen(DEFAULT_PORT);

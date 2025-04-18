@@ -27,7 +27,7 @@ function Login() {
 
   const onSubmit = async (data) => {
     try {
-      const res = await axios.post('http://localhost:5000/api/login', data);
+      const res = await axios.post('http://localhost:3002/api/login', data);
       localStorage.setItem('token', res.data.token);
       alert('Login successful!');
       navigate('/dashboard');
